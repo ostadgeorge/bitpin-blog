@@ -1,0 +1,46 @@
+services:
+  backend:
+    container_name: backend
+    build:
+      context: backend
+    environment:
+      - DB_NAME=${POSTGRES_DB}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PWD}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+
+      - prometheus_multiproc_dir=/tmp/
+    expose:
+      - 8000
+    
+    ports:
+      - 8000:8000
+
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+
+    volumes:
+      - ./backend:/app
+  
+  postgres:
+    container_name: postgres
+    image: docker.repos.balad.ir/postgres:15.3
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PWD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  redis:
+    container_name: redis
+    image: docker.repos.balad.ir/redislabs/redismod
+    ports:
+      - "6379:6379"
+    restart: always
