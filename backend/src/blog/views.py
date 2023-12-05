@@ -1,12 +1,10 @@
 from functools import wraps
-from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from blog.models import BlogEntry, RatingHistory, UserProfile
+from blog.models import BlogEntry, UserProfile
 from blog.serializers import BlogEntrySerializer
-
-# Create your views here.
+from blog.rating_provider import RatingProvider
 
 
 def collect_user(view_func):
@@ -45,14 +43,13 @@ def get_blog_entries(request):
     data = serializer.data
 
     if request.user:
-        rating_history = RatingHistory.objects.filter(user=request.userprofile).all()
-        rating_by_blog_id = {rh.blog_entry_id: rh.rating for rh in rating_history}
         for entry in data:
-            user_rate = rating_by_blog_id.get(entry["id"])
+            user_rate = RatingProvider.get_instance().get_rating(entry["id"], request.userprofile.phone)
             if user_rate:
                 entry["rating"] = user_rate
 
     return JsonResponse(data, safe=False)
+
 
 @csrf_exempt
 @collect_user

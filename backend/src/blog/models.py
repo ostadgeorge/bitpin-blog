@@ -1,6 +1,6 @@
 from django.db import models
 
-# Create your models here.
+from blog.rating_provider import RatingProvider
 
 
 class UserProfile(models.Model):
@@ -21,11 +21,11 @@ class BlogEntry(models.Model):
         self.average_rating = (self.average_rating * (self.rating_count - 1) + rating) / self.rating_count
         self.save()
     
-    def update_rating(self, old_rating: int, new_rating: int):
+    def update_rating(self, old_rating: float, new_rating: float):
         self.average_rating = (self.average_rating * self.rating_count - old_rating + new_rating) / self.rating_count
         self.save()
 
-    def rate_blog(self, user: UserProfile, rating: int):
+    def rate_blog(self, user: UserProfile, rating: float):
         try:
             rating_history = RatingHistory.objects.get(user=user, blog_entry=self)
             old_rating = rating_history.rating
@@ -35,6 +35,8 @@ class BlogEntry(models.Model):
         except RatingHistory.DoesNotExist:
             rating_history = RatingHistory.objects.create(user=user, blog_entry=self, rating=rating)
             self.insert_rating(rating)
+        
+        RatingProvider.get_instance().set_rating(self.id, user.phone, rating)
 
     def __str__(self) -> str:
         return self.title
